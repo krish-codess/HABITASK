@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  password     String
+  age          Int?
+  height       Float?
+  weight       Float?
+  goalWeight   Float?
+  goalCalories Int?
+  goalSteps    Int?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  habits           Habit[]
+  habitLogs        HabitLog[]
+  meals            Meal[]
+  workouts         Workout[]
+  waterLogs        WaterLog[]
+  weightLogs       WeightLog[]
+  activities       Activity[]
+  votesGiven       Vote[]          @relation("VoteGiver")
+  sentRequests     FriendRequest[] @relation("RequestSender")
+  receivedRequests FriendRequest[] @relation("RequestReceiver")
+  friendsAsUser    Friend[]        @relation("FriendUser")
+  friendsAsFriend  Friend[]        @relation("FriendOf")
+}
+
+model Habit {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  icon      String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs HabitLog[]
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  userId    String
+  habitId   String
+  completed Boolean  @default(true)
+  date      String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+}
+
+model FoodItem {
+  id       String  @id @default(cuid())
+  name     String
+  nameHi   String?
+  calories Float
+  protein  Float
+  carbs    Float
+  fat      Float
+  unit     String  @default("100g")
+  isCustom Boolean @default(false)
+  userId   String?
+
+  mealEntries MealEntry[]
+}
+
+model Meal {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  date      String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries MealEntry[]
+}
+
+model MealEntry {
+  id         String @id @default(cuid())
+  mealId     String
+  foodItemId String
+  quantity   Float
+  unit       String @default("g")
+
+  meal     Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  foodItem FoodItem @relation(fields: [foodItemId], references: [id])
+}
+
+model Workout {
+  id             String   @id @default(cuid())
+  userId         String
+  exerciseName   String
+  duration       Int
+  caloriesBurned Float?
+  date           String
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WaterLog {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Float
+  date      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WeightLog {
+  id        String   @id @default(cuid())
+  userId    String
+  weight    Float
+  date      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FriendRequest {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("RequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("RequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+}
+
+model Friend {
+  id        String   @id @default(cuid())
+  userId    String
+  friendId  String
+  createdAt DateTime @default(now())
+
+  user   User @relation("FriendUser", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("FriendOf", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  data      Json
+  createdAt DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes Vote[]
+}
+
+model Vote {
+  id         String   @id @default(cuid())
+  activityId String
+  userId     String
+  value      Int
+  createdAt  DateTime @default(now())
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  user     User     @relation("VoteGiver", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, userId])
+}
+
+model ScannedFoodCache {
+  id        String   @id @default(cuid())
+  barcode   String   @unique
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
