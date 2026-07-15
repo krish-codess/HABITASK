@@ -1,6 +1,17 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// Calories per 100g units — all others are per-serving
+const GRAM_UNITS = new Set(['g', 'ml', '100g']);
+
+function calcCalories(foodItem, quantity, entryUnit) {
+  const unit = entryUnit || foodItem.unit;
+  if (GRAM_UNITS.has(unit)) {
+    return foodItem.calories * (quantity / 100);
+  }
+  return foodItem.calories * quantity;
+}
+
 const getMeals = async (req, res, next) => {
   try {
     const { date } = req.query;
@@ -19,7 +30,7 @@ const getMeals = async (req, res, next) => {
 const addFoodToMeal = async (req, res, next) => {
   try {
     const { mealType, foodItemId, quantity, unit, date } = req.body;
-    if (!mealType || !foodItemId || !quantity) {
+    if (!mealType || !foodItemId || quantity === undefined || quantity === null) {
       return res.status(400).json({ message: 'mealType, foodItemId and quantity are required' });
     }
     const targetDate = date || new Date().toISOString().split('T')[0];
@@ -27,24 +38,26 @@ const addFoodToMeal = async (req, res, next) => {
     let meal = await prisma.meal.findFirst({
       where: { userId: req.user.id, type: mealType, date: targetDate },
     });
-
     if (!meal) {
       meal = await prisma.meal.create({
         data: { userId: req.user.id, type: mealType, date: targetDate },
       });
     }
 
+    const foodItem = await prisma.foodItem.findUnique({ where: { id: foodItemId } });
+    if (!foodItem) return res.status(404).json({ message: 'Food item not found' });
+
+    const entryUnit = unit || foodItem.unit;
     const entry = await prisma.mealEntry.create({
-      data: { mealId: meal.id, foodItemId, quantity: Number(quantity), unit: unit || 'g' },
+      data: { mealId: meal.id, foodItemId, quantity: Number(quantity), unit: entryUnit },
       include: { foodItem: true },
     });
 
-    const foodItem = await prisma.foodItem.findUnique({ where: { id: foodItemId } });
     await prisma.activity.create({
       data: {
         userId: req.user.id,
         type: 'meal_logged',
-        data: { mealType, foodName: foodItem?.name, quantity: Number(quantity), unit: unit || 'g', date: targetDate },
+        data: { mealType, foodName: foodItem.name, quantity: Number(quantity), unit: entryUnit, date: targetDate },
       },
     });
 
@@ -88,7 +101,7 @@ const getDailyCalories = async (req, res, next) => {
 
     meals.forEach((meal) => {
       meal.entries.forEach((entry) => {
-        const factor = entry.quantity / 100;
+        const factor = GRAM_UNITS.has(entry.unit) ? entry.quantity / 100 : entry.quantity;
         totalCalories += entry.foodItem.calories * factor;
         totalProtein += entry.foodItem.protein * factor;
         totalCarbs += entry.foodItem.carbs * factor;
@@ -123,11 +136,15 @@ const getCalorieTrend = async (req, res, next) => {
     meals.forEach((meal) => {
       if (!byDate[meal.date]) byDate[meal.date] = 0;
       meal.entries.forEach((entry) => {
-        byDate[meal.date] += entry.foodItem.calories * (entry.quantity / 100);
+        const factor = GRAM_UNITS.has(entry.unit) ? entry.quantity / 100 : entry.quantity;
+        byDate[meal.date] += entry.foodItem.calories * factor;
       });
     });
 
-    const trend = Object.entries(byDate).map(([date, calories]) => ({ date, calories: Math.round(calories) })).sort((a, b) => a.date.localeCompare(b.date));
+    const trend = Object.entries(byDate)
+      .map(([date, calories]) => ({ date, calories: Math.round(calories) }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
     res.json(trend);
   } catch (err) {
     next(err);

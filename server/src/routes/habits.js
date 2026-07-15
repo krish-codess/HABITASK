@@ -4,13 +4,19 @@ const { getHabits, createHabit, updateHabit, deleteHabit, getLogs, toggleLog, ge
 const { protect } = require('../middleware/auth');
 
 router.use(protect);
+
+// Static routes first
+router.get('/logs', getLogs);
+router.get('/heatmap', getHeatmap);
+router.post('/logs/:habitId/toggle', toggleLog);
+
+// Collection
 router.get('/', getHabits);
 router.post('/', createHabit);
+
+// Dynamic routes last
+router.get('/:id/streak', getStreak);
 router.put('/:id', updateHabit);
 router.delete('/:id', deleteHabit);
-router.get('/logs', getLogs);
-router.post('/logs/:habitId/toggle', toggleLog);
-router.get('/heatmap', getHeatmap);
-router.get('/:id/streak', getStreak);
 
 module.exports = router;

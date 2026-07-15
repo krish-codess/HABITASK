@@ -13,6 +13,15 @@ export default function BarcodeScanner({ onFound, onClose }) {
   const scannerRef = useRef(null);
   const htmlScannerRef = useRef(null);
 
+  const stopScanner = async () => {
+    const scanner = htmlScannerRef.current;
+    htmlScannerRef.current = null;
+    try {
+      if (scanner) await scanner.stop();
+    } catch {}
+    setScanning(false);
+  };
+
   const startScanner = async () => {
     setScanning(true);
     setError('');
@@ -23,26 +32,19 @@ export default function BarcodeScanner({ onFound, onClose }) {
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.5 },
         async (decodedText) => {
-          await scanner.stop();
+          // Stop before fetching so camera releases immediately
+          htmlScannerRef.current = null;
+          try { await scanner.stop(); } catch {}
           setScanning(false);
           await fetchProduct(decodedText);
         },
         () => {}
       );
     } catch (err) {
+      htmlScannerRef.current = null;
       setScanning(false);
       setError('Camera access denied or not available. Try entering barcode manually.');
     }
-  };
-
-  const stopScanner = async () => {
-    try {
-      if (htmlScannerRef.current) {
-        await htmlScannerRef.current.stop();
-        htmlScannerRef.current = null;
-      }
-    } catch {}
-    setScanning(false);
   };
 
   const fetchProduct = async (code) => {

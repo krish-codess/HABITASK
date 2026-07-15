@@ -45,19 +45,22 @@ model Habit {
 
   user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   logs HabitLog[]
+
+  @@index([userId])
 }
 
 model HabitLog {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   userId    String
   habitId   String
-  completed Boolean  @default(true)
+  completed Boolean @default(true)
   date      String
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
   @@unique([habitId, date])
+  @@index([userId, date])
 }
 
 model FoodItem {
@@ -73,6 +76,9 @@ model FoodItem {
   userId   String?
 
   mealEntries MealEntry[]
+
+  @@index([name])
+  @@index([nameHi])
 }
 
 model Meal {
@@ -85,6 +91,8 @@ model Meal {
 
   user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   entries MealEntry[]
+
+  @@index([userId, date])
 }
 
 model MealEntry {
@@ -109,6 +117,8 @@ model Workout {
   createdAt      DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
 }
 
 model WaterLog {
@@ -119,6 +129,8 @@ model WaterLog {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
 }
 
 model WeightLog {
@@ -129,6 +141,8 @@ model WeightLog {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model FriendRequest {
@@ -142,6 +156,7 @@ model FriendRequest {
   receiver User @relation("RequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@unique([senderId, receiverId])
+  @@index([receiverId, status])
 }
 
 model Friend {
@@ -154,6 +169,7 @@ model Friend {
   friend User @relation("FriendOf", fields: [friendId], references: [id], onDelete: Cascade)
 
   @@unique([userId, friendId])
+  @@index([userId])
 }
 
 model Activity {
@@ -165,6 +181,8 @@ model Activity {
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   votes Vote[]
+
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model Vote {
