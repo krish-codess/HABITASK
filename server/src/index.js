@@ -30,9 +30,17 @@ const allowedOrigins = [
   'http://localhost:4173',
 ].filter(Boolean);
 
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  // Allow any Vercel preview/production deployment for this project
+  if (/^https:\/\/habitask.*\.vercel\.app$/.test(origin)) return true;
+  return false;
+}
+
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    if (isAllowedOrigin(origin)) return cb(null, true);
     cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
