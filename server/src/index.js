@@ -17,6 +17,7 @@ const feedRoutes = require('./routes/feed');
 const voteRoutes = require('./routes/votes');
 const waterRoutes = require('./routes/water');
 const weightRoutes = require('./routes/weight');
+const analyticsRoutes = require('./routes/analytics');
 
 const app = express();
 
@@ -83,6 +84,7 @@ app.use('/api/feed', feedRoutes);
 app.use('/api/votes', voteRoutes);
 app.use('/api/water', waterRoutes);
 app.use('/api/weight', weightRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.use(errorHandler);
 

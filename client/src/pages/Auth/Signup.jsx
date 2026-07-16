@@ -16,7 +16,7 @@ export default function Signup() {
     setLoading(true);
     try {
       await register(form);
-      navigate('/');
+      navigate('/app');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Try again.');
     } finally {
