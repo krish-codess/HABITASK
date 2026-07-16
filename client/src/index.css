@@ -2,51 +2,221 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── BASE ──────────────────────────────────────────────── */
 @layer base {
-  * {
+  *, *::before, *::after {
     box-sizing: border-box;
   }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-slate-900 text-slate-100 font-sans antialiased;
+    background-color: #0c0c12;
+    color: #f0f0f8;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     min-height: 100dvh;
+    line-height: 1.5;
   }
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+
+  /* Prevent blue flash on tap (mobile) */
+  * {
+    -webkit-tap-highlight-color: transparent;
   }
-  ::-webkit-scrollbar-track {
-    @apply bg-slate-800;
+
+  /* Text selection */
+  ::selection {
+    background-color: rgba(124, 106, 247, 0.28);
+    color: #f0f0f8;
   }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-slate-600 rounded-full;
-  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar       { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #0c0c12; }
+  ::-webkit-scrollbar-thumb { background: #323250; border-radius: 9999px; }
 }
 
+/* ─── COMPONENTS ─────────────────────────────────────────── */
 @layer components {
-  .tab-active {
-    @apply text-indigo-400 border-b-2 border-indigo-400;
-  }
+
+  /* === Cards === */
   .card {
-    @apply bg-slate-800 rounded-2xl p-4 border border-slate-700/50;
+    @apply bg-ht-surface border border-ht-border rounded-xl p-4;
   }
+  .card-elevated {
+    @apply bg-ht-elevated border border-ht-border-2 rounded-xl p-4;
+  }
+
+  /* === Buttons === */
   .btn-primary {
-    @apply bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-5 rounded-xl transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2
+           bg-ht-accent hover:bg-ht-accent/90
+           text-white text-sm font-semibold
+           h-9 px-4 rounded-lg
+           transition-all duration-150
+           active:scale-[0.97]
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ht-accent;
   }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2
+           bg-transparent hover:bg-ht-elevated
+           text-ht-text-2 hover:text-ht-text-1 text-sm font-medium
+           h-9 px-4 rounded-lg
+           border border-ht-border hover:border-ht-border-2
+           transition-all duration-150
+           active:scale-[0.97]
+           disabled:opacity-40 disabled:cursor-not-allowed
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ht-accent;
+  }
+
+  /* btn-secondary kept as alias for ghost */
   .btn-secondary {
-    @apply bg-slate-700 hover:bg-slate-600 text-slate-100 font-semibold py-2.5 px-5 rounded-xl transition-all duration-150 active:scale-95 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2
+           bg-transparent hover:bg-ht-elevated
+           text-ht-text-2 hover:text-ht-text-1 text-sm font-medium
+           h-9 px-4 rounded-lg
+           border border-ht-border hover:border-ht-border-2
+           transition-all duration-150
+           active:scale-[0.97]
+           disabled:opacity-40 disabled:cursor-not-allowed
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ht-accent;
   }
+
   .btn-danger {
-    @apply bg-red-600/20 hover:bg-red-600/30 text-red-400 font-semibold py-2 px-4 rounded-xl transition-all duration-150 active:scale-95;
+    @apply inline-flex items-center justify-center gap-2
+           bg-ht-danger/10 hover:bg-ht-danger/20
+           text-ht-danger text-sm font-medium
+           h-9 px-4 rounded-lg
+           transition-all duration-150
+           active:scale-[0.97]
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ht-danger;
   }
+
+  /* Square icon-only button */
+  .btn-icon {
+    @apply inline-flex items-center justify-center flex-shrink-0
+           h-8 w-8 rounded-lg
+           text-ht-text-3 hover:text-ht-text-1 hover:bg-ht-elevated
+           transition-all duration-150
+           active:scale-90
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ht-accent;
+  }
+  .btn-icon-sm {
+    @apply inline-flex items-center justify-center flex-shrink-0
+           h-7 w-7 rounded-md
+           text-ht-text-3 hover:text-ht-text-1 hover:bg-ht-elevated
+           transition-all duration-150 active:scale-90;
+  }
+
+  /* === Inputs === */
   .input-field {
-    @apply bg-slate-700/50 border border-slate-600 text-slate-100 placeholder-slate-400 rounded-xl px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all;
+    @apply w-full h-9 px-3 rounded-lg
+           bg-ht-elevated border border-ht-border
+           text-sm text-ht-text-1 placeholder:text-ht-text-3
+           transition-all duration-150
+           focus:outline-none focus:border-ht-accent focus:ring-1 focus:ring-ht-accent
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .input-field-lg {
+    @apply w-full h-11 px-4 rounded-lg
+           bg-ht-elevated border border-ht-border
+           text-base text-ht-text-1 placeholder:text-ht-text-3
+           transition-all duration-150
+           focus:outline-none focus:border-ht-accent focus:ring-1 focus:ring-ht-accent
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .textarea-field {
+    @apply w-full px-3 py-2.5 rounded-lg
+           bg-ht-elevated border border-ht-border
+           text-sm text-ht-text-1 placeholder:text-ht-text-3
+           transition-all duration-150 resize-none
+           focus:outline-none focus:border-ht-accent focus:ring-1 focus:ring-ht-accent;
+  }
+  .field-label {
+    @apply block text-xs font-medium text-ht-text-2 mb-1.5;
+  }
+
+  /* === Badges === */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5
+           rounded-md text-[11px] font-semibold tracking-wide;
+  }
+  .badge-accent {
+    @apply inline-flex items-center gap-1 px-2 py-0.5
+           rounded-md text-[11px] font-semibold tracking-wide
+           bg-ht-accent/15 text-ht-accent-2;
+  }
+  .badge-success {
+    @apply inline-flex items-center gap-1 px-2 py-0.5
+           rounded-md text-[11px] font-semibold tracking-wide
+           bg-ht-success/15 text-ht-success;
+  }
+  .badge-warning {
+    @apply inline-flex items-center gap-1 px-2 py-0.5
+           rounded-md text-[11px] font-semibold tracking-wide
+           bg-ht-warning/15 text-ht-warning;
+  }
+  .badge-danger {
+    @apply inline-flex items-center gap-1 px-2 py-0.5
+           rounded-md text-[11px] font-semibold tracking-wide
+           bg-ht-danger/15 text-ht-danger;
+  }
+  .badge-muted {
+    @apply inline-flex items-center gap-1 px-2 py-0.5
+           rounded-md text-[11px] font-semibold tracking-wide
+           bg-ht-elevated text-ht-text-3;
+  }
+
+  /* === Typography helpers === */
+  .section-label {
+    @apply text-[11px] font-semibold tracking-widest uppercase text-ht-text-3;
+  }
+  .page-title {
+    @apply text-lg font-semibold text-ht-text-1 tracking-tight;
+  }
+
+  /* === Segmented tab bar === */
+  .tab-bar {
+    @apply flex gap-0.5 bg-ht-surface border border-ht-border rounded-lg p-0.5;
+  }
+  .tab-item {
+    @apply flex-1 flex items-center justify-center gap-1.5
+           h-7 rounded-md text-xs font-medium
+           text-ht-text-3 hover:text-ht-text-2
+           transition-all duration-150 cursor-pointer select-none;
+  }
+  .tab-item-active {
+    @apply flex-1 flex items-center justify-center gap-1.5
+           h-7 rounded-md text-xs font-medium
+           bg-ht-elevated text-ht-text-1
+           transition-all duration-150 cursor-pointer select-none;
+  }
+
+  /* Legacy (kept for compat) */
+  .tab-active {
+    @apply text-ht-accent border-b-2 border-ht-accent;
+  }
+
+  /* === Divider === */
+  .divider {
+    @apply border-t border-ht-border;
   }
 }
 
+/* ─── HEATMAP ─────────────────────────────────────────────── */
 .heatmap-cell {
-  border-radius: 2px;
-  transition: transform 0.1s;
+  border-radius: 3px;
+  transition: transform 0.1s, opacity 0.1s;
 }
 .heatmap-cell:hover {
-  transform: scale(1.3);
+  transform: scale(1.45);
+  opacity: 1 !important;
+  z-index: 1;
+  position: relative;
 }

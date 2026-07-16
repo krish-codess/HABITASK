@@ -1,5 +1,4 @@
-import { useLocation, Link } from 'react-router-dom';
-import AppIcon from '../UI/AppIcon.jsx';
+import { useLocation } from 'react-router-dom';
 
 const TITLES = {
   '/app':           'Habits',
@@ -14,17 +13,20 @@ export default function TopBar() {
   const { pathname } = useLocation();
   const title = TITLES[pathname] || 'HabiTask';
 
+  const today = new Date().toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800">
+    <header className="sticky top-0 z-40 bg-ht-bg/95 backdrop-blur-md border-b border-ht-border">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <span className="text-2xl">🎯</span>
-          <span className="text-lg font-bold text-slate-100 group-hover:text-indigo-400 transition-colors">
-            {title}
-          </span>
-        </Link>
-        <span className="text-xs text-slate-500 font-medium">
-          {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+        <h1 className="text-base font-semibold text-ht-text-1 tracking-tight">
+          {title}
+        </h1>
+        <span className="text-xs font-medium text-ht-text-3 bg-ht-elevated border border-ht-border px-2.5 py-1 rounded-md">
+          {today}
         </span>
       </div>
     </header>

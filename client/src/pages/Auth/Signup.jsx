@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 
 export default function Signup() {
   const [form, setForm] = useState({ name: '', email: '', password: '', age: '', height: '', weight: '' });
-  const [error, setError] = useState('');
+  const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -24,65 +24,75 @@ export default function Signup() {
     }
   };
 
-  const field = (key) => ({ value: form[key], onChange: (e) => setForm({ ...form, [key]: e.target.value }) });
+  const field = (key) => ({
+    value: form[key],
+    onChange: (e) => setForm({ ...form, [key]: e.target.value }),
+  });
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-ht-bg flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
+
+        {/* Wordmark */}
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🎯</div>
-          <h1 className="text-3xl font-bold text-slate-100">HabiTask</h1>
-          <p className="text-slate-400 mt-1 text-sm">Start your journey today</p>
+          <p className="text-2xl font-bold text-ht-text-1 tracking-tight">HabiTask</p>
+          <p className="text-sm text-ht-text-3 mt-1">Build discipline, one day at a time</p>
         </div>
 
-        <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
-          <h2 className="text-xl font-semibold mb-5 text-slate-100">Create account</h2>
+        {/* Form card */}
+        <div className="bg-ht-surface border border-ht-border rounded-xl p-6 space-y-4">
+          <h2 className="text-base font-semibold text-ht-text-1">Create account</h2>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-4 text-sm">
+            <div className="bg-ht-danger/10 border border-ht-danger/20 text-ht-danger rounded-lg px-3 py-2.5 text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
-              <input type="text" className="input-field" placeholder="Your name" {...field('name')} required />
+              <label className="field-label">Full name</label>
+              <input type="text" className="input-field" placeholder="Your name" {...field('name')} required autoFocus />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+              <label className="field-label">Email</label>
               <input type="email" className="input-field" placeholder="you@example.com" {...field('email')} required autoComplete="email" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+              <label className="field-label">Password</label>
               <input type="password" className="input-field" placeholder="Min. 6 characters" {...field('password')} required autoComplete="new-password" />
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Age</label>
-                <input type="number" className="input-field text-sm" placeholder="25" {...field('age')} min="10" max="100" />
+
+            {/* Optional body stats — compact 3-col */}
+            <div>
+              <label className="field-label">Body stats (optional)</label>
+              <div className="grid grid-cols-3 gap-2 mt-1">
+                <div>
+                  <input type="number" className="input-field text-center" placeholder="Age" {...field('age')} min="10" max="100" />
+                </div>
+                <div>
+                  <input type="number" className="input-field text-center" placeholder="cm" {...field('height')} min="100" max="250" />
+                </div>
+                <div>
+                  <input type="number" className="input-field text-center" placeholder="kg" {...field('weight')} min="20" max="300" />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Height (cm)</label>
-                <input type="number" className="input-field text-sm" placeholder="170" {...field('height')} min="100" max="250" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Weight (kg)</label>
-                <input type="number" className="input-field text-sm" placeholder="70" {...field('weight')} min="20" max="300" />
-              </div>
+              <p className="text-[11px] text-ht-text-3 mt-1.5 text-center">Age · Height · Weight</p>
             </div>
-            <button type="submit" className="btn-primary w-full mt-2" disabled={loading}>
-              {loading ? 'Creating account...' : 'Create Account'}
+
+            <button type="submit" className="btn-primary w-full mt-1" disabled={loading}>
+              {loading ? 'Creating account…' : 'Create account'}
             </button>
           </form>
 
-          <p className="text-center mt-5 text-sm text-slate-400">
+          <p className="text-center text-sm text-ht-text-3 pt-1">
             Already have an account?{' '}
-            <Link to="/login" className="text-indigo-400 hover:text-indigo-300 font-medium">
+            <Link to="/login" className="text-ht-accent hover:text-ht-accent-2 font-medium transition-colors">
               Sign in
             </Link>
           </p>
         </div>
+
       </div>
     </div>
   );

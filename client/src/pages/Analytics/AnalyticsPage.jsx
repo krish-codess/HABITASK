@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  LineChart, Line, BarChart, Bar, AreaChart, Area,
+  BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
@@ -8,18 +8,17 @@ import { getAnalyticsSummary, getAnalyticsHeatmap, getAnalyticsInsights } from '
 import AppIcon from '../../components/UI/AppIcon.jsx';
 import LoadingSpinner from '../../components/UI/LoadingSpinner.jsx';
 
-// ── constants ────────────────────────────────────────────────────────────────
 const RANGES = [
-  { label: '7d',  days: 7  },
-  { label: '30d', days: 30 },
-  { label: '90d', days: 90 },
-  { label: '1y',  days: 365},
+  { label: '7d',  days: 7   },
+  { label: '30d', days: 30  },
+  { label: '90d', days: 90  },
+  { label: '1y',  days: 365 },
 ];
 
 const CHART_TOOLTIP = {
-  contentStyle: { background: '#1e293b', border: '1px solid #334155', borderRadius: 10, fontSize: 12 },
-  labelStyle: { color: '#94a3b8' },
-  cursor: { fill: 'rgba(99,102,241,0.08)' },
+  contentStyle: { background: '#1a1a2e', border: '1px solid #252538', borderRadius: 8, fontSize: 12 },
+  labelStyle:   { color: '#8c8ca8' },
+  cursor:       { fill: 'rgba(124,106,247,0.06)' },
 };
 
 const fmt = (d) => {
@@ -27,52 +26,36 @@ const fmt = (d) => {
   return dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 };
 
-// ── sub-components ───────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, sub, trend, color = 'text-indigo-400' }) {
+/* ── Stat card ──────────────────────────────────────────── */
+function StatCard({ label, value, sub, accentClass = 'text-ht-accent-2' }) {
   return (
-    <div className="card flex flex-col gap-1 min-w-0">
-      <div className="flex items-center justify-between">
-        <div className={`p-2 rounded-lg bg-slate-700/50 ${color}`}>
-          <AppIcon name={icon} size={16} strokeWidth={2} />
-        </div>
-        {trend !== undefined && (
-          <span className={`flex items-center gap-0.5 text-xs font-medium ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-            <AppIcon name={trend >= 0 ? 'arrow-up' : 'arrow-down'} size={12} />
-            {Math.abs(trend)}
-          </span>
-        )}
-      </div>
-      <p className="text-xl font-bold text-slate-100 mt-1 truncate">{value ?? '—'}</p>
-      <p className="text-xs text-slate-400 truncate">{label}</p>
-      {sub && <p className="text-[10px] text-slate-600 truncate">{sub}</p>}
+    <div className="card flex flex-col gap-1.5">
+      <p className="section-label">{label}</p>
+      <p className={`text-xl font-bold tabular-nums truncate ${accentClass}`}>{value ?? '—'}</p>
+      {sub && <p className="text-[11px] text-ht-text-3 truncate">{sub}</p>}
     </div>
   );
 }
 
-function SectionTitle({ icon, title, sub }) {
-  return (
-    <div className="flex items-center gap-3 mb-3">
-      <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
-        <AppIcon name={icon} size={18} strokeWidth={1.8} />
-      </div>
-      <div>
-        <h2 className="text-base font-semibold text-slate-100">{title}</h2>
-        {sub && <p className="text-xs text-slate-500">{sub}</p>}
-      </div>
-    </div>
-  );
+/* ── Discipline heatmap ─────────────────────────────────── */
+function scoreColor(score) {
+  if (!score) return '#1a1a2e';
+  if (score < 25) return '#2a1f50';
+  if (score < 50) return '#46358a';
+  if (score < 75) return '#6050c8';
+  if (score < 90) return '#7c6af7';
+  return '#a294fc';
 }
 
-// Year-long discipline heatmap
 function DisciplineHeatmap({ data }) {
   const [tooltip, setTooltip] = useState(null);
 
   const weeks = useMemo(() => {
     if (!data?.length) return [];
     const map = {};
-    data.forEach(d => { map[d.date] = d; });
+    data.forEach((d) => { map[d.date] = d; });
 
-    const end = new Date();
+    const end   = new Date();
     const start = new Date(end);
     start.setFullYear(start.getFullYear() - 1);
     start.setDate(start.getDate() - start.getDay());
@@ -91,19 +74,10 @@ function DisciplineHeatmap({ data }) {
     return ws;
   }, [data]);
 
-  function scoreColor(score) {
-    if (!score) return '#1e293b';
-    if (score < 25) return '#312e81';
-    if (score < 50) return '#3730a3';
-    if (score < 75) return '#4338ca';
-    if (score < 90) return '#6366f1';
-    return '#818cf8';
-  }
-
   return (
-    <div className="card">
-      <SectionTitle icon="all" title="Discipline Heatmap" sub="Daily score over the past year" />
-      <div className="overflow-x-auto pb-1">
+    <div className="card space-y-3">
+      <p className="section-label">Year overview</p>
+      <div className="overflow-x-auto">
         <div className="flex gap-[3px]" style={{ minWidth: weeks.length * 13 }}>
           {weeks.map((week, wi) => (
             <div key={wi} className="flex flex-col gap-[3px]">
@@ -120,53 +94,50 @@ function DisciplineHeatmap({ data }) {
           ))}
         </div>
       </div>
-      <div className="flex items-center gap-2 mt-2">
-        <span className="text-[10px] text-slate-600">Less</span>
-        {['#1e293b','#312e81','#3730a3','#4338ca','#6366f1','#818cf8'].map(c => (
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] text-ht-text-3">Less</span>
+        {['#1a1a2e','#2a1f50','#46358a','#6050c8','#7c6af7','#a294fc'].map((c) => (
           <div key={c} className="w-2.5 h-2.5 rounded-[2px]" style={{ background: c }} />
         ))}
-        <span className="text-[10px] text-slate-600">More</span>
+        <span className="text-[10px] text-ht-text-3">More</span>
       </div>
       {tooltip && (
         <div
-          className="fixed z-50 pointer-events-none bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs shadow-xl"
-          style={{ left: tooltip.x + 12, top: tooltip.y - 40 }}
+          className="fixed z-50 pointer-events-none bg-ht-elevated border border-ht-border-2 rounded-lg px-3 py-2 text-xs shadow-xl"
+          style={{ left: tooltip.x + 12, top: tooltip.y - 44 }}
         >
-          <p className="text-slate-300 font-medium">{fmt(tooltip.date)}</p>
-          <p className="text-indigo-400">Score: {tooltip.score}</p>
-          {tooltip.habits > 0 && <p className="text-slate-400">{tooltip.habits} habits</p>}
+          <p className="text-ht-text-1 font-medium">{fmt(tooltip.date)}</p>
+          <p className="text-ht-accent">Score: {tooltip.score}</p>
+          {tooltip.habits > 0 && <p className="text-ht-text-3">{tooltip.habits} habits</p>}
         </div>
       )}
     </div>
   );
 }
 
+/* ── Insight card ───────────────────────────────────────── */
 function InsightCard({ icon, type, text }) {
-  const colors = {
-    positive: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-    warning:  'bg-yellow-500/10 border-yellow-500/20 text-yellow-400',
-    neutral:  'bg-indigo-500/10 border-indigo-500/20 text-indigo-400',
-  };
-  const iconColor = {
-    positive: 'text-emerald-400',
-    warning:  'text-yellow-400',
-    neutral:  'text-indigo-400',
-  };
+  const cls = {
+    positive: 'bg-ht-success/8 border-ht-success/20 text-ht-success',
+    warning:  'bg-ht-warning/8 border-ht-warning/20 text-ht-warning',
+    neutral:  'bg-ht-accent/8 border-ht-accent/20 text-ht-accent-2',
+  }[type] || 'bg-ht-accent/8 border-ht-accent/20 text-ht-accent-2';
+
   return (
-    <div className={`flex items-start gap-3 p-3 rounded-xl border ${colors[type] || colors.neutral}`}>
-      <AppIcon name={icon} size={16} strokeWidth={2} className={`flex-shrink-0 mt-0.5 ${iconColor[type] || iconColor.neutral}`} />
-      <p className="text-sm text-slate-300">{text}</p>
+    <div className={`flex items-start gap-3 p-3 rounded-xl border ${cls}`}>
+      <AppIcon name={icon} size={15} strokeWidth={2} className="flex-shrink-0 mt-0.5" />
+      <p className="text-sm text-ht-text-1">{text}</p>
     </div>
   );
 }
 
-// ── main page ────────────────────────────────────────────────────────────────
+/* ── Main page ──────────────────────────────────────────── */
 export default function AnalyticsPage() {
-  const [days, setDays] = useState(30);
-  const [summary, setSummary] = useState(null);
-  const [heatmap, setHeatmap] = useState(null);
-  const [insights, setInsights] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [days, setDays]           = useState(30);
+  const [summary, setSummary]     = useState(null);
+  const [heatmap, setHeatmap]     = useState(null);
+  const [insights, setInsights]   = useState([]);
+  const [loading, setLoading]     = useState(true);
   const [heatmapLoading, setHeatmapLoading] = useState(true);
   const [activeChart, setActiveChart] = useState('habits');
 
@@ -186,6 +157,17 @@ export default function AnalyticsPage() {
 
   const overview = summary?.overview;
 
+  const CHARTS = {
+    habits:   { label: 'Habits',   color: '#7c6af7', key: 'pct',      data: summary?.habits.series,   unit: '%',    name: 'Completion' },
+    calories: { label: 'Calories', color: '#fbbf24', key: 'calories',  data: summary?.calories.series, unit: 'kcal', name: 'Calories' },
+    workouts: { label: 'Workouts', color: '#4ade80', key: 'duration',  data: summary?.workouts.series, unit: 'min',  name: 'Duration' },
+    water:    { label: 'Water',    color: '#38bdf8', key: 'amount',    data: summary?.water.series,    unit: 'ml',   name: 'Water' },
+    weight:   { label: 'Weight',   color: '#e879f9', key: 'weight',    data: summary?.weight.entries,  unit: 'kg',   name: 'Weight' },
+    score:    { label: 'Score',    color: '#fb923c', key: 'score',     data: summary?.score.series,    unit: 'pts',  name: 'Score' },
+  };
+
+  const chart = CHARTS[activeChart];
+
   const radarData = overview ? [
     { subject: 'Habits',   value: Math.min(overview.habitCompletionRate, 100) },
     { subject: 'Workouts', value: summary.workouts.totalSessions > 0 ? Math.min(summary.workouts.totalSessions / (days / 7 * 3) * 100, 100) : 0 },
@@ -194,30 +176,23 @@ export default function AnalyticsPage() {
     { subject: 'Score',    value: overview.avgScore },
   ] : [];
 
-  const CHARTS = {
-    habits:   { label: 'Habits',   color: '#6366f1', key: 'pct',      data: summary?.habits.series,   yLabel: '%',    name: 'Completion %' },
-    calories: { label: 'Calories', color: '#f59e0b', key: 'calories',  data: summary?.calories.series, yLabel: 'kcal', name: 'Calories' },
-    workouts: { label: 'Workouts', color: '#10b981', key: 'duration',  data: summary?.workouts.series, yLabel: 'min',  name: 'Duration' },
-    water:    { label: 'Water',    color: '#38bdf8', key: 'amount',    data: summary?.water.series,    yLabel: 'ml',   name: 'Water (ml)' },
-    weight:   { label: 'Weight',   color: '#e879f9', key: 'weight',    data: summary?.weight.entries,  yLabel: 'kg',   name: 'Weight' },
-    score:    { label: 'Score',    color: '#fb923c', key: 'score',     data: summary?.score.series,    yLabel: 'pts',  name: 'Score' },
-  };
-
-  const chart = CHARTS[activeChart];
-
   return (
-    <div className="space-y-5 py-4">
+    <div className="space-y-4 py-4">
+
+      {/* Year heatmap — hero element at top */}
+      {heatmapLoading ? (
+        <div className="card flex justify-center py-6"><LoadingSpinner size="sm" /></div>
+      ) : heatmap?.length > 0 ? (
+        <DisciplineHeatmap data={heatmap} />
+      ) : null}
+
       {/* Range filter */}
-      <div className="flex gap-2 flex-wrap">
-        {RANGES.map(r => (
+      <div className="tab-bar">
+        {RANGES.map((r) => (
           <button
             key={r.days}
             onClick={() => setDays(r.days)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              days === r.days
-                ? 'bg-indigo-500 text-white'
-                : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700'
-            }`}
+            className={days === r.days ? 'tab-item-active' : 'tab-item'}
           >
             {r.label}
           </button>
@@ -225,141 +200,123 @@ export default function AnalyticsPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16"><LoadingSpinner /></div>
+        <div className="flex justify-center py-12"><LoadingSpinner /></div>
       ) : (
         <>
-          {/* Overview cards */}
+          {/* Stat cards */}
           <div className="grid grid-cols-2 gap-3">
-            <StatCard icon="bolt"     label="Discipline Score"  value={`${overview?.disciplineScore ?? 0}/100`} color="text-orange-400" />
-            <StatCard icon="flame"    label="Current Streak"    value={`${overview?.currentStreak ?? 0}d`}      color="text-red-400" />
-            <StatCard icon="trophy"   label="Longest Streak"    value={`${overview?.longestStreak ?? 0}d`}      color="text-yellow-400" />
-            <StatCard icon="lunchbox" label="Calories Today"    value={`${overview?.caloriesToday ?? 0} kcal`}  color="text-amber-400" />
-            <StatCard icon="droplet"  label="Water Today"       value={`${((overview?.waterToday ?? 0)/1000).toFixed(1)}L`} color="text-blue-400" />
-            <StatCard icon="scale"    label="Weight"
+            <StatCard label="Discipline Score"  value={`${overview?.disciplineScore ?? 0}`}       sub="out of 100"          accentClass="text-orange-400" />
+            <StatCard label="Current Streak"    value={`${overview?.currentStreak ?? 0}d`}         sub="days in a row"       accentClass="text-ht-danger" />
+            <StatCard label="Longest Streak"    value={`${overview?.longestStreak ?? 0}d`}         sub="personal best"       accentClass="text-ht-warning" />
+            <StatCard label="Habit Rate"        value={`${overview?.habitCompletionRate ?? 0}%`}   sub={`last ${days} days`} accentClass="text-ht-accent-2" />
+            <StatCard label="Water Today"       value={`${((overview?.waterToday ?? 0)/1000).toFixed(1)}L`} sub="goal: 2L" accentClass="text-blue-400" />
+            <StatCard label="Weight"
               value={overview?.weight ? `${overview.weight}kg` : '—'}
-              trend={overview?.weightTrend}
-              color="text-purple-400"
+              sub={overview?.weightTrend != null ? `${overview.weightTrend > 0 ? '+' : ''}${overview.weightTrend}kg trend` : 'no data'}
+              accentClass="text-purple-400"
             />
           </div>
 
-          {/* Radar chart — discipline breakdown */}
-          {radarData.length > 0 && (
+          {/* Radar chart */}
+          {radarData.some((d) => d.value > 0) && (
             <div className="card">
-              <SectionTitle icon="chart-pie" title="Discipline Breakdown" sub="Across all tracked dimensions" />
-              <ResponsiveContainer width="100%" height={220}>
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={80}>
-                  <PolarGrid stroke="#334155" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11 }} />
+              <p className="section-label mb-4">Discipline breakdown</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={75}>
+                  <PolarGrid stroke="#252538" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#505068', fontSize: 11 }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-                  <Radar name="Score" dataKey="value" stroke="#6366f1" fill="#6366f1" fillOpacity={0.25} strokeWidth={2} />
+                  <Radar name="Score" dataKey="value" stroke="#7c6af7" fill="#7c6af7" fillOpacity={0.2} strokeWidth={2} />
                   <Tooltip {...CHART_TOOLTIP} formatter={(v) => [`${Math.round(v)}%`, 'Score']} />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
           )}
 
-          {/* Chart switcher */}
-          <div className="card">
-            <div className="flex gap-2 flex-wrap mb-4">
+          {/* Chart switcher + trend chart */}
+          <div className="card space-y-4">
+            <div className="tab-bar">
               {Object.entries(CHARTS).map(([key, c]) => (
                 <button
                   key={key}
                   onClick={() => setActiveChart(key)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
-                    activeChart === key
-                      ? 'text-white border-transparent'
-                      : 'bg-slate-800 text-slate-500 border-slate-700 hover:text-slate-300'
-                  }`}
-                  style={activeChart === key ? { background: c.color, borderColor: c.color } : {}}
+                  className={activeChart === key ? 'tab-item-active' : 'tab-item'}
                 >
                   {c.label}
                 </button>
               ))}
             </div>
 
-            <SectionTitle
-              icon={activeChart === 'habits' ? 'calendar' : activeChart === 'calories' ? 'lunchbox' : activeChart === 'water' ? 'droplet' : activeChart === 'weight' ? 'scale' : 'chart-bar'}
-              title={`${chart.label} Trend`}
-              sub={`Last ${days} days`}
-            />
-
-            {chart.data?.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                {activeChart === 'workouts' ? (
-                  <BarChart data={chart.data} margin={{ left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                    <XAxis dataKey="date" tickFormatter={fmt} tick={{ fill: '#475569', fontSize: 10 }} interval={Math.floor(chart.data.length / 5)} />
-                    <YAxis tick={{ fill: '#475569', fontSize: 10 }} unit={chart.yLabel} />
-                    <Tooltip {...CHART_TOOLTIP} labelFormatter={fmt} formatter={(v) => [`${v}${chart.yLabel}`, chart.name]} />
-                    <Bar dataKey={chart.key} fill={chart.color} radius={[3, 3, 0, 0]} />
-                  </BarChart>
-                ) : (
-                  <AreaChart data={chart.data} margin={{ left: -20 }}>
-                    <defs>
-                      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor={chart.color} stopOpacity={0.3} />
-                        <stop offset="95%" stopColor={chart.color} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                    <XAxis dataKey="date" tickFormatter={fmt} tick={{ fill: '#475569', fontSize: 10 }} interval={Math.floor(chart.data.length / 5)} />
-                    <YAxis tick={{ fill: '#475569', fontSize: 10 }} unit={chart.yLabel} />
-                    <Tooltip {...CHART_TOOLTIP} labelFormatter={fmt} formatter={(v) => [`${v}${chart.yLabel}`, chart.name]} />
-                    <Area type="monotone" dataKey={chart.key} stroke={chart.color} fill="url(#areaGrad)" strokeWidth={2} dot={false} />
-                  </AreaChart>
-                )}
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex flex-col items-center py-8 text-slate-600">
-                <AppIcon name="chart-bar" size={32} strokeWidth={1} />
-                <p className="text-sm mt-2">No data yet — start logging to see trends.</p>
-              </div>
-            )}
+            <div>
+              <p className="section-label mb-3">{chart.label} — last {days} days</p>
+              {chart.data?.length > 0 ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  {activeChart === 'workouts' ? (
+                    <BarChart data={chart.data} margin={{ left: -20, right: 4 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e1e30" vertical={false} />
+                      <XAxis dataKey="date" tickFormatter={fmt} tick={{ fill: '#505068', fontSize: 10 }} interval={Math.floor(chart.data.length / 5)} />
+                      <YAxis tick={{ fill: '#505068', fontSize: 10 }} unit={chart.unit} />
+                      <Tooltip {...CHART_TOOLTIP} labelFormatter={fmt} formatter={(v) => [`${v}${chart.unit}`, chart.name]} />
+                      <Bar dataKey={chart.key} fill={chart.color} radius={[3, 3, 0, 0]} fillOpacity={0.8} />
+                    </BarChart>
+                  ) : (
+                    <AreaChart data={chart.data} margin={{ left: -20, right: 4 }}>
+                      <defs>
+                        <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%"  stopColor={chart.color} stopOpacity={0.25} />
+                          <stop offset="95%" stopColor={chart.color} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e1e30" vertical={false} />
+                      <XAxis dataKey="date" tickFormatter={fmt} tick={{ fill: '#505068', fontSize: 10 }} interval={Math.floor(chart.data.length / 5)} />
+                      <YAxis tick={{ fill: '#505068', fontSize: 10 }} unit={chart.unit} />
+                      <Tooltip {...CHART_TOOLTIP} labelFormatter={fmt} formatter={(v) => [`${v}${chart.unit}`, chart.name]} />
+                      <Area type="monotone" dataKey={chart.key} stroke={chart.color} fill="url(#ag)" strokeWidth={2} dot={false} />
+                    </AreaChart>
+                  )}
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex flex-col items-center py-8 text-ht-text-3">
+                  <AppIcon name="chart-bar" size={28} strokeWidth={1} />
+                  <p className="text-sm mt-2">No data yet</p>
+                  <p className="text-xs mt-1">Start logging to see trends</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Weekly summary row */}
+          {/* Period summary table */}
           {summary && (
             <div className="card">
-              <SectionTitle icon="sparkles" title="Period Summary" sub={`Last ${days} days`} />
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <p className="section-label mb-3">Period summary</p>
+              <div className="space-y-0 divide-y divide-ht-border">
                 {[
-                  ['Avg Calories',   `${summary.calories.avgCalories} kcal`],
-                  ['Avg Protein',    `${summary.calories.avgProtein}g`],
-                  ['Avg Carbs',      `${summary.calories.avgCarbs}g`],
-                  ['Avg Fat',        `${summary.calories.avgFat}g`],
-                  ['Avg Water',      `${(summary.water.avgIntake / 1000).toFixed(1)}L`],
-                  ['Total Workouts', `${summary.workouts.totalSessions} sessions`],
-                  ['Habit Rate',     `${summary.habits.avgCompletionRate}%`],
-                  ['Avg Score',      `${summary.overview.avgScore}/100`],
+                  ['Avg daily calories',  `${summary.calories.avgCalories} kcal`],
+                  ['Avg protein',         `${summary.calories.avgProtein}g`],
+                  ['Avg water intake',    `${(summary.water.avgIntake / 1000).toFixed(1)}L`],
+                  ['Total workout sessions', `${summary.workouts.totalSessions}`],
+                  ['Avg habit completion', `${summary.habits.avgCompletionRate}%`],
+                  ['Avg discipline score', `${summary.overview.avgScore}/100`],
                 ].map(([label, value]) => (
-                  <div key={label} className="flex justify-between py-1 border-b border-slate-800">
-                    <span className="text-slate-500">{label}</span>
-                    <span className="text-slate-200 font-medium">{value}</span>
+                  <div key={label} className="flex justify-between py-2.5">
+                    <span className="text-sm text-ht-text-3">{label}</span>
+                    <span className="text-sm text-ht-text-1 font-medium tabular-nums">{value}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
+
+          {/* Insights */}
+          {insights.length > 0 && (
+            <div className="card space-y-2">
+              <p className="section-label mb-1">Insights</p>
+              {insights.map((ins, i) => (
+                <InsightCard key={i} icon={ins.icon} type={ins.type} text={ins.text} />
+              ))}
+            </div>
+          )}
         </>
-      )}
-
-      {/* Heatmap */}
-      {heatmapLoading ? (
-        <div className="card flex justify-center py-8"><LoadingSpinner size="sm" /></div>
-      ) : heatmap?.length > 0 ? (
-        <DisciplineHeatmap data={heatmap} />
-      ) : null}
-
-      {/* Insights */}
-      {insights.length > 0 && (
-        <div className="card">
-          <SectionTitle icon="sparkles" title="Insights" sub="Auto-generated from your data" />
-          <div className="space-y-2">
-            {insights.map((ins, i) => (
-              <InsightCard key={i} icon={ins.icon} type={ins.type} text={ins.text} />
-            ))}
-          </div>
-        </div>
       )}
     </div>
   );

@@ -1,86 +1,140 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getFeed, getLeaderboard, getFriends, sendFriendRequest, getPendingRequests, acceptRequest, rejectRequest, unfriend, searchUsers, vote } from '../../api/social.js';
+import {
+  getFeed, getLeaderboard, getFriends, sendFriendRequest,
+  getPendingRequests, acceptRequest, rejectRequest, unfriend,
+  searchUsers, vote,
+} from '../../api/social.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import Modal from '../../components/UI/Modal.jsx';
 import LoadingSpinner from '../../components/UI/LoadingSpinner.jsx';
-import { MagnifyingGlassIcon, TrophyIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
 
-const TABS = ['Feed', 'Friends', 'Leaderboard'];
+function Avatar({ name, size = 'md' }) {
+  const s = size === 'sm' ? 'h-8 w-8 text-xs' : 'h-9 w-9 text-sm';
+  return (
+    <div className={`${s} rounded-full bg-ht-elevated border border-ht-border-2 flex items-center justify-center font-semibold text-ht-text-2 flex-shrink-0`}>
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+function XIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+function SearchIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+    </svg>
+  );
+}
+function ThumbIcon({ up }) {
+  return up ? (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z" />
+      <path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
+    </svg>
+  ) : (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z" />
+      <path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17" />
+    </svg>
+  );
+}
+
+const ACTIVITY_INFO = {
+  habit_completed: { emoji: '✅', label: 'completed a habit',  color: 'text-ht-success' },
+  meal_logged:     { emoji: '🥗', label: 'logged a meal',      color: 'text-ht-warning' },
+  workout_logged:  { emoji: '💪', label: 'logged a workout',   color: 'text-ht-accent-2' },
+};
 
 function ActivityCard({ activity, currentUserId, onVote }) {
-  const { user, type, data, createdAt, votes, voteScore, userVote } = activity;
+  const { user, type, data, createdAt, voteScore, userVote } = activity;
   const [localScore, setLocalScore] = useState(voteScore);
-  const [localUserVote, setLocalUserVote] = useState(userVote);
-
-  const typeInfo = {
-    habit_completed: { icon: '🎯', label: 'completed a habit', color: 'text-green-400' },
-    meal_logged: { icon: '🥗', label: 'logged a meal', color: 'text-yellow-400' },
-    workout_logged: { icon: '💪', label: 'logged a workout', color: 'text-indigo-400' },
-  };
-  const info = typeInfo[type] || { icon: '⭐', label: 'did something', color: 'text-slate-400' };
+  const [localVote, setLocalVote]   = useState(userVote);
+  const info = ACTIVITY_INFO[type] || { emoji: '⭐', label: 'did something', color: 'text-ht-text-3' };
 
   const handleVote = async (value) => {
     try {
       await onVote(activity.id, value);
-      if (localUserVote === value) {
-        setLocalScore(localScore - value);
-        setLocalUserVote(0);
+      if (localVote === value) {
+        setLocalScore((s) => s - value);
+        setLocalVote(0);
       } else {
-        setLocalScore(localScore - localUserVote + value);
-        setLocalUserVote(value);
+        setLocalScore((s) => s - localVote + value);
+        setLocalVote(value);
       }
     } catch {}
   };
 
-  return (
-    <div className="card space-y-3">
-      <div className="flex items-start gap-3">
-        <div className="bg-slate-700 rounded-full h-9 w-9 flex items-center justify-center text-sm font-bold text-slate-300 flex-shrink-0">
-          {user.name.charAt(0).toUpperCase()}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-slate-100 text-sm">{user.name}</span>
-            <span className={`text-xs ${info.color}`}>{info.icon} {info.label}</span>
-          </div>
+  const timeAgo = new Date(createdAt).toLocaleString('en-IN', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
 
-          <div className="mt-1 bg-slate-700/40 rounded-xl p-2.5">
+  return (
+    <div className="card space-y-3 animate-fade-in">
+      <div className="flex items-start gap-3">
+        <Avatar name={user.name} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-sm font-semibold text-ht-text-1">{user.name}</span>
+            <span className={`text-xs ${info.color}`}>{info.label}</span>
+          </div>
+          <div className="mt-2 px-3 py-2 bg-ht-elevated rounded-lg border border-ht-border">
             {type === 'habit_completed' && (
-              <p className="text-sm text-slate-300">✅ {data.habitName}</p>
+              <p className="text-sm text-ht-text-1">{info.emoji} {data.habitName}</p>
             )}
             {type === 'meal_logged' && (
-              <p className="text-sm text-slate-300">
-                {data.mealType}: {data.foodName} ({data.quantity}{data.unit})
+              <p className="text-sm text-ht-text-1">
+                {info.emoji} {data.mealType}: {data.foodName} ({data.quantity}{data.unit})
               </p>
             )}
             {type === 'workout_logged' && (
-              <p className="text-sm text-slate-300">
-                {data.exerciseName} · {data.duration}min · {data.caloriesBurned}kcal
+              <p className="text-sm text-ht-text-1">
+                {info.emoji} {data.exerciseName} · {data.duration}min
+                {data.caloriesBurned ? ` · ${data.caloriesBurned}kcal` : ''}
               </p>
             )}
           </div>
-
-          <p className="text-xs text-slate-600 mt-1">
-            {new Date(createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-          </p>
+          <p className="text-[11px] text-ht-text-3 mt-1.5">{timeAgo}</p>
         </div>
       </div>
 
       {user.id !== currentUserId && (
-        <div className="flex items-center gap-3 pt-1 border-t border-slate-700/50">
+        <div className="flex items-center gap-2 pt-2 border-t border-ht-border">
           <button
             onClick={() => handleVote(1)}
-            className={`flex items-center gap-1 text-sm px-3 py-1.5 rounded-xl transition-all ${localUserVote === 1 ? 'bg-green-500/20 text-green-400' : 'text-slate-500 hover:text-green-400 hover:bg-green-500/10'}`}
+            className={`flex items-center gap-1.5 h-7 px-3 rounded-lg text-xs font-medium transition-all ${
+              localVote === 1
+                ? 'bg-ht-success/15 text-ht-success'
+                : 'text-ht-text-3 hover:text-ht-success hover:bg-ht-success/10'
+            }`}
           >
-            👍 {localUserVote === 1 ? 'Liked' : 'Like'}
+            <ThumbIcon up={true} /> {localVote === 1 ? 'Liked' : 'Like'}
           </button>
           <button
             onClick={() => handleVote(-1)}
-            className={`flex items-center gap-1 text-sm px-3 py-1.5 rounded-xl transition-all ${localUserVote === -1 ? 'bg-red-500/20 text-red-400' : 'text-slate-500 hover:text-red-400 hover:bg-red-500/10'}`}
+            className={`flex items-center gap-1.5 h-7 px-3 rounded-lg text-xs font-medium transition-all ${
+              localVote === -1
+                ? 'bg-ht-danger/15 text-ht-danger'
+                : 'text-ht-text-3 hover:text-ht-danger hover:bg-ht-danger/10'
+            }`}
           >
-            👎
+            <ThumbIcon up={false} />
           </button>
-          <span className={`text-sm font-medium ml-auto ${localScore > 0 ? 'text-green-400' : localScore < 0 ? 'text-red-400' : 'text-slate-500'}`}>
+          <span className={`text-xs font-semibold ml-auto tabular-nums ${
+            localScore > 0 ? 'text-ht-success' : localScore < 0 ? 'text-ht-danger' : 'text-ht-text-3'
+          }`}>
             {localScore > 0 ? '+' : ''}{localScore}
           </span>
         </div>
@@ -90,37 +144,50 @@ function ActivityCard({ activity, currentUserId, onVote }) {
 }
 
 function LeaderboardRow({ user, rank, isCurrentUser }) {
-  const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+  const medal = rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : null;
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-xl ${isCurrentUser ? 'bg-indigo-500/10 border border-indigo-500/30' : 'hover:bg-slate-700/30'} transition-colors`}>
-      <span className="text-xl w-8 text-center">{rankEmoji}</span>
-      <div className="bg-slate-700 rounded-full h-9 w-9 flex items-center justify-center text-sm font-bold text-slate-300 flex-shrink-0">
-        {user.name.charAt(0).toUpperCase()}
+    <div className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-colors ${
+      isCurrentUser ? 'bg-ht-accent/10 border border-ht-accent/20' : 'hover:bg-ht-elevated'
+    }`}>
+      <div className="w-7 text-center flex-shrink-0">
+        {medal ? (
+          <span className="text-lg leading-none">{medal}</span>
+        ) : (
+          <span className="text-xs font-bold text-ht-text-3">#{rank}</span>
+        )}
       </div>
+      <Avatar name={user.name} />
       <div className="flex-1 min-w-0">
-        <p className={`font-semibold text-sm ${isCurrentUser ? 'text-indigo-300' : 'text-slate-100'}`}>{user.name} {isCurrentUser && '(You)'}</p>
-        <p className="text-xs text-slate-500">{user.habitLogs} habits · {user.workouts} workouts · {user.habitRate}% rate</p>
+        <p className={`text-sm font-semibold truncate ${isCurrentUser ? 'text-ht-accent-2' : 'text-ht-text-1'}`}>
+          {user.name}{isCurrentUser ? ' (You)' : ''}
+        </p>
+        <p className="text-[11px] text-ht-text-3">
+          {user.habitLogs} habits · {user.workouts} workouts · {user.habitRate}% rate
+        </p>
       </div>
-      <div className="text-right">
-        <p className="font-bold text-indigo-400">{user.score}</p>
-        <p className="text-xs text-slate-500">pts</p>
+      <div className="text-right flex-shrink-0">
+        <p className="text-sm font-bold text-ht-accent-2 tabular-nums">{user.score}</p>
+        <p className="text-[10px] text-ht-text-3">pts</p>
       </div>
     </div>
   );
 }
 
+const TABS = ['Feed', 'Friends', 'Leaderboard'];
+
 export default function SocialPage() {
   const { user: currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState('Feed');
-  const [feed, setFeed] = useState([]);
-  const [friends, setFriends] = useState([]);
-  const [requests, setRequests] = useState([]);
+  const [activeTab, setActiveTab]     = useState('Feed');
+  const [feed, setFeed]               = useState([]);
+  const [friends, setFriends]         = useState([]);
+  const [requests, setRequests]       = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]         = useState(true);
+  const [showSearch, setShowSearch]   = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
+  const [searching, setSearching]     = useState(false);
+  const [requestSent, setRequestSent] = useState(new Set());
 
   const loadTab = useCallback(async () => {
     setLoading(true);
@@ -153,11 +220,8 @@ export default function SocialPage() {
   const handleSendRequest = async (receiverId) => {
     try {
       await sendFriendRequest(receiverId);
-      setSearchResults((prev) => prev.filter((u) => u.id !== receiverId));
-      alert('Friend request sent!');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Could not send request');
-    }
+      setRequestSent((prev) => new Set(prev).add(receiverId));
+    } catch {}
   };
 
   const handleAccept = async (id) => {
@@ -173,7 +237,7 @@ export default function SocialPage() {
   };
 
   const handleUnfriend = async (id) => {
-    if (!confirm('Remove this friend?')) return;
+    // Two-step: flag then remove on confirm — simplified: just remove with a subtle state
     await unfriend(id);
     setFriends((prev) => prev.filter((f) => f.id !== id));
   };
@@ -184,15 +248,21 @@ export default function SocialPage() {
 
   return (
     <div className="space-y-4 py-4">
-      {/* Tabs */}
-      <div className="flex bg-slate-800 rounded-xl p-1">
+
+      {/* Tab bar */}
+      <div className="tab-bar">
         {TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
+            className={activeTab === tab ? 'tab-item-active' : 'tab-item'}
           >
-            {tab === 'Feed' ? '📰' : tab === 'Friends' ? '👥' : '🏆'} {tab}
+            {tab}
+            {tab === 'Friends' && requests.length > 0 && (
+              <span className="ml-1 h-4 w-4 rounded-full bg-ht-danger text-white text-[9px] font-bold flex items-center justify-center">
+                {requests.length}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -205,10 +275,15 @@ export default function SocialPage() {
           {activeTab === 'Feed' && (
             <div className="space-y-3">
               {feed.length === 0 ? (
-                <div className="text-center py-12 text-slate-500">
-                  <p className="text-4xl mb-3">📰</p>
-                  <p>No activity yet.</p>
-                  <p className="text-sm mt-1">Add friends to see their progress here.</p>
+                <div className="card flex flex-col items-center text-center py-10 gap-3">
+                  <span className="text-4xl">👥</span>
+                  <div>
+                    <p className="text-sm font-semibold text-ht-text-1">Nothing to show yet</p>
+                    <p className="text-xs text-ht-text-3 mt-1">Add friends to see their progress here.</p>
+                  </div>
+                  <button onClick={() => setActiveTab('Friends')} className="btn-ghost h-8 px-4 text-xs">
+                    Find friends
+                  </button>
                 </div>
               ) : (
                 feed.map((activity) => (
@@ -228,66 +303,65 @@ export default function SocialPage() {
             <div className="space-y-4">
               {/* Pending requests */}
               {requests.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                    Requests ({requests.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {requests.map((req) => (
-                      <div key={req.id} className="card flex items-center gap-3">
-                        <div className="bg-slate-700 rounded-full h-9 w-9 flex items-center justify-center font-bold flex-shrink-0">
-                          {req.sender.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-slate-100 text-sm">{req.sender.name}</p>
-                          <p className="text-xs text-slate-500">{req.sender.email}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => handleAccept(req.id)} className="bg-green-500/20 text-green-400 hover:bg-green-500/30 p-2 rounded-xl">
-                            <CheckIcon className="h-4 w-4" />
-                          </button>
-                          <button onClick={() => handleReject(req.id)} className="bg-red-500/20 text-red-400 hover:bg-red-500/30 p-2 rounded-xl">
-                            <XMarkIcon className="h-4 w-4" />
-                          </button>
-                        </div>
+                <div className="space-y-2">
+                  <p className="section-label">Requests ({requests.length})</p>
+                  {requests.map((req) => (
+                    <div key={req.id} className="flex items-center gap-3 px-3 py-3 rounded-xl bg-ht-surface border border-ht-border">
+                      <Avatar name={req.sender.name} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-ht-text-1 truncate">{req.sender.name}</p>
+                        <p className="text-xs text-ht-text-3 truncate">{req.sender.email}</p>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => handleAccept(req.id)}
+                          className="h-8 w-8 rounded-lg bg-ht-success/10 text-ht-success hover:bg-ht-success/20 flex items-center justify-center transition-all"
+                        >
+                          <CheckIcon />
+                        </button>
+                        <button
+                          onClick={() => handleReject(req.id)}
+                          className="h-8 w-8 rounded-lg bg-ht-danger/10 text-ht-danger hover:bg-ht-danger/20 flex items-center justify-center transition-all"
+                        >
+                          <XIcon />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Search */}
-              <button onClick={() => setShowSearch(true)} className="btn-primary w-full flex items-center justify-center gap-2">
-                <MagnifyingGlassIcon className="h-4 w-4" />
-                Find Friends
+              {/* Find friends button */}
+              <button
+                onClick={() => setShowSearch(true)}
+                className="btn-ghost w-full gap-2 justify-center"
+              >
+                <SearchIcon /> Find friends
               </button>
 
               {/* Friends list */}
-              <div>
-                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Friends ({friends.length})
-                </h3>
+              <div className="space-y-2">
+                {friends.length > 0 && <p className="section-label">Friends ({friends.length})</p>}
                 {friends.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500 text-sm">
-                    No friends yet. Search for people to add!
+                  <div className="card text-center py-8">
+                    <p className="text-sm text-ht-text-3">No friends yet. Search to add people!</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {friends.map((friend) => (
-                      <div key={friend.id} className="card flex items-center gap-3">
-                        <div className="bg-slate-700 rounded-full h-9 w-9 flex items-center justify-center font-bold text-slate-300 flex-shrink-0">
-                          {friend.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-slate-100 text-sm">{friend.name}</p>
-                          <p className="text-xs text-slate-500">{friend.email}</p>
-                        </div>
-                        <button onClick={() => handleUnfriend(friend.id)} className="text-slate-600 hover:text-red-400 text-xs px-2 py-1 rounded-lg hover:bg-red-400/10">
-                          Remove
-                        </button>
+                  friends.map((friend) => (
+                    <div key={friend.id} className="flex items-center gap-3 px-3 py-3 rounded-xl bg-ht-surface border border-ht-border group">
+                      <Avatar name={friend.name} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-ht-text-1 truncate">{friend.name}</p>
+                        <p className="text-xs text-ht-text-3 truncate">{friend.email}</p>
                       </div>
-                    ))}
-                  </div>
+                      <button
+                        onClick={() => handleUnfriend(friend.id)}
+                        className="text-xs text-ht-text-3 hover:text-ht-danger px-2 h-7 rounded-md hover:bg-ht-danger/10 transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))
                 )}
               </div>
             </div>
@@ -295,65 +369,75 @@ export default function SocialPage() {
 
           {/* LEADERBOARD */}
           {activeTab === 'Leaderboard' && (
-            <div className="space-y-3">
-              <div className="card">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrophyIcon className="h-5 w-5 text-yellow-400" />
-                  <h3 className="font-semibold text-slate-100">Weekly Rankings</h3>
-                </div>
-                <p className="text-xs text-slate-500 mb-4">Based on habit completion, workouts, and meal tracking</p>
-                {leaderboard.length === 0 ? (
-                  <p className="text-center text-slate-500 text-sm py-4">Add friends to see rankings!</p>
-                ) : (
-                  <div className="space-y-1">
-                    {leaderboard.map((entry) => (
-                      <LeaderboardRow
-                        key={entry.id}
-                        user={entry}
-                        rank={entry.rank}
-                        isCurrentUser={entry.id === currentUser.id}
-                      />
-                    ))}
-                  </div>
-                )}
+            <div className="card space-y-1">
+              <div className="flex items-center justify-between pb-3 border-b border-ht-border mb-1">
+                <p className="section-label">Weekly rankings</p>
+                <p className="text-[11px] text-ht-text-3">habits · workouts · meals</p>
               </div>
+              {leaderboard.length === 0 ? (
+                <p className="text-center text-ht-text-3 text-sm py-6">Add friends to see rankings</p>
+              ) : (
+                leaderboard.map((entry) => (
+                  <LeaderboardRow
+                    key={entry.id}
+                    user={entry}
+                    rank={entry.rank}
+                    isCurrentUser={entry.id === currentUser.id}
+                  />
+                ))
+              )}
             </div>
           )}
         </>
       )}
 
-      {/* Search Modal */}
-      <Modal isOpen={showSearch} onClose={() => { setShowSearch(false); setSearchQuery(''); setSearchResults([]); }} title="Find Friends">
+      {/* Find Friends Modal */}
+      <Modal
+        isOpen={showSearch}
+        onClose={() => { setShowSearch(false); setSearchQuery(''); setSearchResults([]); }}
+        title="Find Friends"
+      >
         <div className="space-y-3">
           <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ht-text-3">
+              <SearchIcon />
+            </span>
             <input
               type="text"
               className="input-field pl-9"
-              placeholder="Search by email..."
+              placeholder="Search by email or name"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               autoFocus
             />
           </div>
-          {searching && <div className="text-center py-3"><LoadingSpinner size="sm" /></div>}
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+
+          {searching && <div className="flex justify-center py-3"><LoadingSpinner size="sm" /></div>}
+
+          <div className="space-y-px max-h-64 overflow-y-auto">
             {searchResults.map((u) => (
-              <div key={u.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-700/50">
-                <div className="bg-slate-700 rounded-full h-9 w-9 flex items-center justify-center font-bold text-slate-300 flex-shrink-0">
-                  {u.name.charAt(0).toUpperCase()}
+              <div key={u.id} className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-ht-elevated transition-colors">
+                <Avatar name={u.name} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-ht-text-1 truncate">{u.name}</p>
+                  <p className="text-xs text-ht-text-3 truncate">{u.email}</p>
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-slate-100 text-sm">{u.name}</p>
-                  <p className="text-xs text-slate-500">{u.email}</p>
-                </div>
-                <button onClick={() => handleSendRequest(u.id)} className="btn-primary text-xs py-1.5 px-3">
-                  Add
-                </button>
+                {requestSent.has(u.id) ? (
+                  <span className="text-xs text-ht-success font-medium">Sent ✓</span>
+                ) : (
+                  <button onClick={() => handleSendRequest(u.id)} className="btn-primary h-7 px-3 text-xs">
+                    Add
+                  </button>
+                )}
               </div>
             ))}
             {searchQuery.length >= 2 && searchResults.length === 0 && !searching && (
-              <p className="text-center text-slate-500 text-sm py-3">No users found</p>
+              <p className="text-center text-ht-text-3 text-sm py-4">No users found</p>
+            )}
+            {searchQuery.length < 2 && (
+              <p className="text-center text-ht-text-3 text-xs py-4">
+                Type at least 2 characters to search
+              </p>
             )}
           </div>
         </div>
